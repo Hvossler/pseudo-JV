@@ -14,12 +14,16 @@ class pJV:
         self.ldc = LDC502("COM24")
         self.JVcode = control3.Control(address='GPIB1::22::INSTR')
         self.laser_wl = 532
-        self.LASERSTABILIZETIME = 10.0
+        self.LASERSTABILIZETIME = 3.0
         self.laser_current = self.ldc.get_laser_current()
         self.laser_temp = self.ldc.get_laser_temp()
 
     # Function to take intensity dependent voltage measurments of a cell: 
-    def take_pJV(self, sample_name = "sample", min_current = 300, max_current = 800, step = 20, n_wires = 4, num_measurements = 5):
+    def take_pJV(self, sample_name = "sample", min_current = 300, max_current = 800, step = 20, n_wires = 2, num_measurements = 5):
+        self.ldc.set_laserOn()
+        self.ldc.set_tecOn()
+        self.ldc.set_modulationOff()
+        print("Laser and TEC turned on, modulation turned off.")
         print('\nSetting Laser Current and waiting to stabilize...')
         data = {}
         self.JVcode.keithley.wires = n_wires
@@ -39,7 +43,7 @@ class pJV:
             for _ in range(num_measurements):
                 voc = self.JVcode.voc()
                 voc_list.append(voc)
-                sleep(0.5)
+                sleep(0.3)
             # Calculate average     
             avg_voc= np.mean(voc_list)
             std_voc = np.std(voc_list) 
@@ -51,7 +55,7 @@ class pJV:
         csv_filename = f"{sample_name}_data.csv"
         with open(csv_filename, mode = 'w', newline = '') as file:
             writer = csv.writer(file)
-            writer.writerow(["Current (mA)", "Avg Voc (V)", "Std Dev (V)"])  # Write header row
+            writer.writerow(["Current", "Voc", "V_err"])  # Write header row
             for current_setting, (avg_voc, std_voc) in data.items():
                 writer.writerow([current_setting, avg_voc, std_voc]) #Write data rows
 
